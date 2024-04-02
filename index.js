@@ -80,7 +80,11 @@ async function notify(hourly) {
     }
 }
 
-async function list(days = 30, origen) {
+async function list(arg1, arg2) {
+    let origen = arg1
+    let days = arg2 ?? 30
+    console.log(arg1)
+    console.log(arg2)
     if (!origen) {
         console.log(chalk.red('Debe especificar un origen'))
         return
