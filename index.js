@@ -8,11 +8,16 @@ import moment from 'moment';
 program.command('list <origen> [days]')
 .action(list)
 
-program.command('notify')
+program.command('notify [hourly]')
 .action(notify)
 
-async function notify() {
-    const days = 30
+async function notify(hourly) {
+    let onlyNotifySuccess = false
+    if (hourly === 'hourly') {
+        console.log(chalk.bold('Notificando solo si hay asientos disponibles'))
+        onlyNotifySuccess = true
+    }
+    const days = 60
     const today = new Date()
     console.log(chalk.bold(`Buscando asientos disponibles en los próximos ${days} días para notificar`))
     const endDate = addDays(today, Number(days) ?? 1)
@@ -41,7 +46,7 @@ async function notify() {
             })
         }
     });
-    if (!nonEmptySeats.length || nonEmptySeats.every(a => a.seats === 0)) {
+    if (!onlyNotifySuccess && (!nonEmptySeats.length || nonEmptySeats.every(a => a.seats === 0))) {
         fetch('https://ntfy.sh/trains_mdq', {
             method: 'POST', // PUT works too
             body: `MDQ -> BUE: No hay asientos disponibles para los próximos ${days} días`,
@@ -50,6 +55,7 @@ async function notify() {
     nonEmptySeats = []
     console.log(chalk.bold("Origen: BUE"))
     sentido = 2
+    activeDate = today
     while(activeDate <= endDate) {
         let formattedDate = moment(activeDate).format('DD/MM/YYYY')
         console.log(chalk.bold(`Buscando Fecha: ${formattedDate}`))
@@ -66,7 +72,7 @@ async function notify() {
             })
         }
     });
-    if (!nonEmptySeats.length || nonEmptySeats.every(a => a.seats === 0)) {
+    if (!onlyNotifySuccess && (!nonEmptySeats.length || nonEmptySeats.every(a => a.seats === 0))) {
         fetch('https://ntfy.sh/trains_bue', {
             method: 'POST', // PUT works too
             body: `BUE -> MDQ: No hay asientos disponibles para los próximos ${days} días`,
