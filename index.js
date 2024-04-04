@@ -120,19 +120,28 @@ async function notify(config) {
     await sleep(100);
     activeDate = addDays(activeDate, 1);
   }
-  nonEmptySeats.forEach((element) => {
+  const newSeatsMdq = nonEmptySeats.filter((element) => {
     let previousAvailability = availability_mdq[element.date];
     let currentAvailability = element.seats > 0;
     if (previousAvailability !== currentAvailability) {
       availability_mdq[element.date] = currentAvailability;
-      if (!onlyNotifyCookies && currentAvailability) {
-        fetch("https://ntfy.sh/trains_mdq", {
-          method: "POST", // PUT works too
-          body: `MDQ -> BUE: Asientos disponibles para ${element.date}: ${element.seats}`,
-        });
+      if (currentAvailability) {
+        return true;
       }
     }
+    return false;
   });
+  if (!onlyNotifyCookies && newSeatsMdq.length) {
+    fetch("https://ntfy.sh/trains_mdq", {
+      method: "POST", // PUT works too
+      headers: {
+        Title: "MDQ -> BUE",
+      },
+      body: `Asientos disponibles para el ${newSeatsMdq
+        .map((a) => `${a.date}: ${a.seats}`)
+        .join(`, `)}`,
+    });
+  }
   if (
     !onlyNotifyCookies &&
     !onlyNotifySuccess &&
@@ -163,19 +172,28 @@ async function notify(config) {
     await sleep(100);
     activeDate = addDays(activeDate, 1);
   }
-  nonEmptySeats.forEach((element) => {
+  const newSeatsBue = nonEmptySeats.filter((element) => {
     let previousAvailability = availability_bue[element.date];
     let currentAvailability = element.seats > 0;
     if (previousAvailability !== currentAvailability) {
       availability_bue[element.date] = currentAvailability;
-      if (!onlyNotifyCookies && currentAvailability) {
-        fetch("https://ntfy.sh/trains_bue", {
-          method: "POST", // PUT works too
-          body: `BUE -> MDQ: Asientos disponibles para ${element.date}: ${element.seats}`,
-        });
+      if (currentAvailability) {
+        return true;
       }
     }
+    return false;
   });
+  if (!onlyNotifyCookies && newSeatsBue.length) {
+    fetch("https://ntfy.sh/trains_bue", {
+      method: "POST", // PUT works too
+      headers: {
+        Title: "BUE -> MDQ",
+      },
+      body: `Asientos disponibles para el ${newSeatsBue
+        .map((a) => `${a.date}: ${a.seats}`)
+        .join(`, `)}`,
+    });
+  }
   if (
     !onlyNotifyCookies &&
     !onlyNotifySuccess &&
