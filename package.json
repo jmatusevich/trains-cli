@@ -5,11 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "global": "npm i -g",
+    "build": "docker build -t trains-cli -f Dockerfile .",
+    "publish": "npm run build && docker tag trains-cli:latest registry.matusevich.synology.me/trains-cli && docker push registry.matusevich.synology.me/trains-cli:latest"
   },
   "bin": {
     "trains": "./index.js"
-},
+  },
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -18,6 +21,7 @@
     "commander": "^12.0.0",
     "conf": "^12.0.0",
     "date-fns": "^3.6.0",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "node-cron": "^3.0.3"
   }
 }
