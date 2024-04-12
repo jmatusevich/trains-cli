@@ -28,8 +28,13 @@ async function server() {
     await notify("hourly");
   });
   cron.schedule("7 0 * * *", async () => {
-    console.log("Running every day at 00:03");
+    console.log("Running every day at 00:07");
     await notify();
+  });
+
+  cron.schedule("9 9 * * *", async () => {
+    console.log("Running every day at 09:09");
+    await notify("summary");
   });
   cron.schedule("*/5 * * * *", async () => {
     console.log("Running every 5 minutes");
@@ -78,12 +83,16 @@ async function notify(config) {
   console.log(availability_mdq);
   let onlyNotifySuccess = false;
   let onlyNotifyCookies = false;
+  let summary = false;
   if (config === "hourly") {
     console.log(chalk.bold("Notificando solo si hay asientos disponibles"));
     onlyNotifySuccess = true;
   } else if (config === "cookies") {
     console.log(chalk.bold("Notificando solo si no hay servicios disponibles"));
     onlyNotifyCookies = true;
+  } else if (config === "summary") {
+    console.log(chalk.bold("Notificando resumen de asientos"));
+    summary = true;
   }
   const days = 30; //TODO: change to 30 or something
   const today = new Date();
@@ -117,6 +126,9 @@ async function notify(config) {
         origen: "MDQ",
       },
     ];
+    if (!nonEmptySeats.length || nonEmptySeats.every((a) => a.seats === 0)) {
+      availability_mdq[formattedDate] = false;
+    }
     await sleep(100);
     activeDate = addDays(activeDate, 1);
   }
@@ -131,6 +143,17 @@ async function notify(config) {
     }
     return false;
   });
+  if (summary) {
+    fetch("https://ntfy.sh/trains_mdq_summary", {
+      method: "POST", // PUT works too
+      headers: {
+        Title: "MDQ -> BUE - Resumen",
+      },
+      body: `Resumen de asientos disponibles para los próximos ${days} días:\n ${nonEmptySeats
+        .map((a) => `${a.date}: ${a.seats}`)
+        .join(`, `)}`,
+    });
+  }
   if (!onlyNotifyCookies && newSeatsMdq.length) {
     fetch("https://ntfy.sh/trains_mdq", {
       method: "POST", // PUT works too
@@ -152,6 +175,16 @@ async function notify(config) {
       body: `MDQ -> BUE: No hay asientos disponibles para los próximos ${days} días`,
     });
   }
+
+  if (
+    summary &&
+    (!nonEmptySeats.length || nonEmptySeats.every((a) => a.seats === 0))
+  ) {
+    fetch("https://ntfy.sh/trains_mdq_summary", {
+      method: "POST", // PUT works too
+      body: `MDQ -> BUE: No hay asientos disponibles para los próximos ${days} días`,
+    });
+  }
   nonEmptySeats = [];
   console.log(chalk.bold("Origen: BUE"));
   sentido = 2;
@@ -169,6 +202,9 @@ async function notify(config) {
         origen: "MDQ",
       },
     ];
+    if (!nonEmptySeats.length || nonEmptySeats.every((a) => a.seats === 0)) {
+      availability_bue[formattedDate] = false;
+    }
     await sleep(100);
     activeDate = addDays(activeDate, 1);
   }
@@ -183,6 +219,17 @@ async function notify(config) {
     }
     return false;
   });
+  if (summary) {
+    fetch("https://ntfy.sh/trains_bue_summary", {
+      method: "POST", // PUT works too
+      headers: {
+        Title: "BUE -> MDQ - Resumen",
+      },
+      body: `Resumen de asientos disponibles para los próximos ${days} días:\n ${nonEmptySeats
+        .map((a) => `${a.date}: ${a.seats}`)
+        .join(`, `)}`,
+    });
+  }
   if (!onlyNotifyCookies && newSeatsBue.length) {
     fetch("https://ntfy.sh/trains_bue", {
       method: "POST", // PUT works too
@@ -200,6 +247,15 @@ async function notify(config) {
     (!nonEmptySeats.length || nonEmptySeats.every((a) => a.seats === 0))
   ) {
     fetch("https://ntfy.sh/trains_bue", {
+      method: "POST", // PUT works too
+      body: `BUE -> MDQ: No hay asientos disponibles para los próximos ${days} días`,
+    });
+  }
+  if (
+    summary &&
+    (!nonEmptySeats.length || nonEmptySeats.every((a) => a.seats === 0))
+  ) {
+    fetch("https://ntfy.sh/trains_bue_summary", {
       method: "POST", // PUT works too
       body: `BUE -> MDQ: No hay asientos disponibles para los próximos ${days} días`,
     });
